@@ -1,0 +1,10 @@
+# railway.toml — konfigurasi deployment Railway
+# Letakkan di root project atau di folder backend/frontend masing-masing
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3

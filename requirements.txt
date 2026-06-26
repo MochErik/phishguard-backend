@@ -1,0 +1,48 @@
+fastapi==0.111.0
+uvicorn[standard]==0.30.1
+pydantic==2.7.1
+pydantic-settings==2.3.0
+python-multipart==0.0.9
+httpx==0.27.0
+aiofiles==23.2.1
+
+# NLP & ML
+transformers==4.41.2
+torch==2.3.1
+scikit-learn==1.5.0
+numpy==1.26.4
+joblib==1.4.2
+
+# Text / Document parsing
+pdfplumber==0.11.1
+python-docx==1.1.2
+python-magic==0.4.27
+Pillow==10.3.0
+qrcode==7.4.2
+pyzbar==0.1.9
+beautifulsoup4==4.12.3
+lxml==5.2.2
+
+# URL & Web
+tldextract==5.1.2
+whois==0.9.27
+dnspython==2.6.1
+playwright==1.44.0
+
+# Database & Cache
+sqlalchemy==2.0.30
+alembic==1.13.1
+aiosqlite==0.20.0
+redis==5.0.5
+aioredis==2.0.1
+
+# Auth & Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# Rate limiting
+slowapi==0.1.9
+
+# Monitoring
+loguru==0.7.2
+sentry-sdk[fastapi]==2.5.1
