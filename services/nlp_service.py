@@ -1,6 +1,6 @@
 """
 NLP Engine — Phishing Text Classifier
-Menggunakan HuggingFace Inference API (tidak perlu RAM besar)
+Menggunakan HuggingFace Space API
 """
 import re
 import os
@@ -10,11 +10,32 @@ from loguru import logger
 from models.schemas import NLPResult
 
 HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY", "")
-HF_MODEL_URL = "https://api-inference.huggingface.co/v1/models/ealvaradob/bert-finetuned-phishing"
+HF_SPACE_URL = os.getenv("HF_SPACE_URL", "").rstrip("/")
+HF_MODEL_URL = "https://api-inference.huggingface.co/models/ealvaradob/bert-finetuned-phishing"
 
 
 async def _call_hf_api(text: str) -> Tuple[float, float]:
-    """Panggil HuggingFace Inference API."""
+    """Panggil HuggingFace Space API, fallback ke Inference API."""
+
+    # Coba HF Space dulu
+    if HF_SPACE_URL:
+        try:
+            async with httpx.AsyncClient(timeout=20) as client:
+                r = await client.post(
+                    f"{HF_SPACE_URL}/run/predict",
+                    json={"data": [text[:512]]},
+                )
+                if r.status_code == 200:
+                    data = r.json()
+                    result = data.get("data", [{}])[0]
+                    if isinstance(result, dict):
+                        prob = result.get("phishing_probability", 0.0)
+                        conf = result.get("confidence", 0.6)
+                        return float(prob), float(conf)
+        except Exception as e:
+            logger.warning(f"HF Space error: {e}, fallback ke Inference API")
+
+    # Fallback ke HuggingFace Inference API
     if not HUGGINGFACE_API_KEY:
         return 0.0, 0.0
     try:
@@ -34,12 +55,16 @@ async def _call_hf_api(text: str) -> Tuple[float, float]:
                         elif "SAFE" in item.get("label", "").upper() or "LEGITIMATE" in item.get("label", "").upper():
                             return 1 - item["score"], item["score"]
     except Exception as e:
-        logger.warning(f"HuggingFace API error: {e}")
+        logger.warning(f"HuggingFace Inference API error: {e}")
     return 0.0, 0.0
 
 
 def get_nlp_pipeline():
-    return "huggingface_api" if HUGGINGFACE_API_KEY else "fallback"
+    if HF_SPACE_URL:
+        return "huggingface_space"
+    if HUGGINGFACE_API_KEY:
+        return "huggingface_api"
+    return "fallback"
 
 
 # ── Keyword banks ─────────────────────────────────────────────────────────────
@@ -145,14 +170,14 @@ def nlp_model_score(text: str) -> Tuple[float, float]:
     import asyncio
     pipeline = get_nlp_pipeline()
 
-    if pipeline == "huggingface_api":
+    if pipeline in ("huggingface_space", "huggingface_api"):
         try:
             loop = asyncio.get_event_loop()
             if loop.is_running():
                 import concurrent.futures
                 with concurrent.futures.ThreadPoolExecutor() as pool:
                     future = pool.submit(asyncio.run, _call_hf_api(text))
-                    return future.result(timeout=15)
+                    return future.result(timeout=25)
             else:
                 return loop.run_until_complete(_call_hf_api(text))
         except Exception as e:
