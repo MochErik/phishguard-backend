@@ -48,27 +48,39 @@ URGENCY_PATTERNS = [
     r"\bsegera\b", r"\bsekarang\b", r"\burgent\b", r"\bmendesak\b",
     r"\bhours?\b", r"\bjam lagi\b", r"\bexpir", r"\bdeadline\b",
     r"\bsuspend", r"\bblokir", r"\bdibekukan\b", r"\bterbatas\b",
-    r"\bimited time\b", r"\bact now\b",
+    r"\bimited time\b", r"\bact now\b", r"\b24 jam\b", r"\b48 jam\b",
+    r"\bharus segera\b", r"\bjangan terlambat\b", r"\bsebelum\b",
+    r"\bwaktu terbatas\b", r"\bberakhir\b", r"\bkadaluarsa\b",
 ]
 
 THREAT_PATTERNS = [
     r"\bditutup\b", r"\bakan dihapus\b", r"\bhilang\b", r"\bdenda\b",
     r"\bpenalti\b", r"\bblacklist\b", r"\bdisuspend\b", r"\bterancam\b",
-    r"\bpelanggaran\b", r"\bhukum\b", r"\bpolisi\b",
+    r"\bpelanggaran\b", r"\bhukum\b", r"\bpolisi\b", r"\bdiblokir\b",
+    r"\bpemblokiran\b", r"\bnonaktif\b", r"\bditangguhkan\b",
+    r"\bdihapus permanen\b", r"\bditutup permanen\b", r"\bverifikasi\b",
+    r"\baktivitas mencurigakan\b", r"\btidak sah\b", r"\bilegal\b",
 ]
 
 REWARD_PATTERNS = [
     r"\bmenang\b", r"\bhadiah\b", r"\bgratis\b", r"\bbonus\b",
     r"\bcashback\b", r"\bdiskon\b", r"\bprize\b", r"\bwinner\b",
-    r"\blottery\b", r"\bgiveaway\b", r"\bterpilih\b",
+    r"\blottery\b", r"\bgiveaway\b", r"\bterpilih\b", r"\bselamat\b",
+    r"\bberuntung\b", r"\bundian\b", r"\bvoucher\b", r"\breward\b",
+    r"\bjuta rupiah\b", r"\bjuta\b", r"\bmendapatkan hadiah\b",
 ]
 
 SUSPICIOUS_PHRASES_ID = [
     "klik link berikut", "verifikasi akun anda", "segera konfirmasi",
-    "data anda", "kata sandi", "PIN ATM", "kode OTP", "nomor kartu",
+    "kata sandi", "PIN ATM", "kode OTP", "nomor kartu",
     "transfer sekarang", "hubungi kami segera", "kemenangan anda",
     "hadiah senilai", "akun anda diblokir", "login sekarang",
     "update data", "perbarui informasi", "konfirmasi identitas",
+    "internet banking", "mobile banking", "masukkan password",
+    "masukkan username", "verifikasi data", "klik di sini",
+    "akun akan ditutup", "ditutup permanen", "aktivitas mencurigakan",
+    "hubungi customer service", "segera verifikasi", "akun diblokir",
+    "dalam 24 jam", "dalam 48 jam", "kode otp anda",
 ]
 
 
