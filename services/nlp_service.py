@@ -1,17 +1,45 @@
 """
 NLP Engine — Phishing Text Classifier
-Fallback: rule-based keyword scoring
+Menggunakan HuggingFace Inference API (tidak perlu RAM besar)
 """
 import re
+import os
+import httpx
 from typing import List, Tuple
 from loguru import logger
 from models.schemas import NLPResult
 
-_pipeline = None
+HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY", "")
+HF_MODEL_URL = "https://api-inference.huggingface.co/models/ealvaradob/bert-finetuned-phishing"
+
+
+async def _call_hf_api(text: str) -> Tuple[float, float]:
+    """Panggil HuggingFace Inference API."""
+    if not HUGGINGFACE_API_KEY:
+        return 0.0, 0.0
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            r = await client.post(
+                HF_MODEL_URL,
+                headers={"Authorization": f"Bearer {HUGGINGFACE_API_KEY}"},
+                json={"inputs": text[:512]},
+            )
+            if r.status_code == 200:
+                data = r.json()
+                if isinstance(data, list) and len(data) > 0:
+                    results = data[0] if isinstance(data[0], list) else data
+                    for item in results:
+                        if "PHISHING" in item.get("label", "").upper():
+                            return item["score"], item["score"]
+                        elif "SAFE" in item.get("label", "").upper() or "LEGITIMATE" in item.get("label", "").upper():
+                            return 1 - item["score"], item["score"]
+    except Exception as e:
+        logger.warning(f"HuggingFace API error: {e}")
+    return 0.0, 0.0
 
 
 def get_nlp_pipeline():
-    return "fallback"
+    return "huggingface_api" if HUGGINGFACE_API_KEY else "fallback"
 
 
 # ── Keyword banks ─────────────────────────────────────────────────────────────
@@ -102,21 +130,24 @@ def analyze_text(text: str) -> NLPResult:
 
 
 def nlp_model_score(text: str) -> Tuple[float, float]:
+    import asyncio
     pipeline = get_nlp_pipeline()
 
-    if pipeline == "fallback" or pipeline is None:
-        result = analyze_text(text)
-        raw = (result.urgency_score * 0.4 +
-               result.threat_score * 0.35 +
-               result.reward_score * 0.25)
-        return raw, 0.6
+    if pipeline == "huggingface_api":
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor() as pool:
+                    future = pool.submit(asyncio.run, _call_hf_api(text))
+                    return future.result(timeout=15)
+            else:
+                return loop.run_until_complete(_call_hf_api(text))
+        except Exception as e:
+            logger.error(f"HF API call failed: {e}")
 
-    try:
-        out = pipeline(text[:512])[0]
-        label = out["label"].upper()
-        score = out["score"]
-        prob = score if "PHISH" in label else (1 - score)
-        return prob, score
-    except Exception as e:
-        logger.error(f"NLP inference error: {e}")
-        return 0.0, 0.0
+    result = analyze_text(text)
+    raw = (result.urgency_score * 0.4 +
+           result.threat_score * 0.35 +
+           result.reward_score * 0.25)
+    return raw, 0.6
