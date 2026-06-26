@@ -155,31 +155,29 @@ async def check_blacklists(url: str) -> BlacklistResult:
 
 
 def heuristic_score(features: URLFeatures) -> float:
-    """
-    Rule-based score dari feature extraction.
-    Return 0.0 – 1.0.
-    """
     score = 0.0
 
     if features.has_ip:
-        score += 0.35
+        score += 0.40
     if features.has_at_sign:
-        score += 0.25
+        score += 0.30
     if features.has_double_slash:
-        score += 0.15
+        score += 0.20
     if not features.https:
-        score += 0.10
+        score += 0.20
     if features.has_dash_in_domain:
-        score += 0.10
-    if features.path_length > 200:
-        score += 0.10
-    if features.url_entropy > 4.5:
         score += 0.15
-    if len(features.suspicious_keywords) >= 2:
+    if features.path_length > 100:
+        score += 0.15
+    if features.url_entropy > 4.0:
+        score += 0.15
+    if len(features.suspicious_keywords) >= 3:
+        score += 0.30
+    elif len(features.suspicious_keywords) == 2:
         score += 0.20
     elif len(features.suspicious_keywords) == 1:
         score += 0.10
-    if features.subdomain and features.subdomain.count(".") > 2:
+    if features.subdomain and features.subdomain.count(".") > 1:
         score += 0.15
 
     return min(score, 1.0)
