@@ -10,7 +10,7 @@ from loguru import logger
 from models.schemas import NLPResult
 
 HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY", "")
-HF_MODEL_URL = "https://api-inference.huggingface.co/models/ealvaradob/bert-finetuned-phishing"
+HF_MODEL_URL = "https://api-inference.huggingface.co/v1/models/ealvaradob/bert-finetuned-phishing"
 
 
 async def _call_hf_api(text: str) -> Tuple[float, float]:
