@@ -1,53 +1,17 @@
 """
 NLP Engine — Phishing Text Classifier
-Model: DistilBERT fine-tuned untuk deteksi phishing teks (email/SMS)
-Fallback: rule-based keyword scoring jika model belum tersedia
+Fallback: rule-based keyword scoring
 """
 import re
-import os
 from typing import List, Tuple
 from loguru import logger
 from models.schemas import NLPResult
 
-# Lazy-load transformers supaya startup cepat
 _pipeline = None
 
 
 def get_nlp_pipeline():
-    """Load model sekali, reuse seterusnya."""
-    global _pipeline
-    if _pipeline is None:
-        try:
-            from transformers import pipeline as hf_pipeline
-            from core.config import settings
-
-            model_path = settings.NLP_MODEL_PATH
-            if os.path.exists(model_path):
-                # Model lokal yang sudah ditraining
-                _pipeline = hf_pipeline(
-                    "text-classification",
-                    model=model_path,
-                    tokenizer=model_path,
-                    device=-1,  # CPU
-                    truncation=True,
-                    max_length=512,
-                )
-                logger.info(f"NLP model loaded from {model_path}")
-            else:
-                # Gunakan pretrained base — ganti dengan model phishing spesifik
-                # Rekomendasi: ealvaradob/bert-finetuned-phishing (HuggingFace)
-                _pipeline = hf_pipeline(
-                    "text-classification",
-                    model="ealvaradob/bert-finetuned-phishing",
-                    device=-1,
-                    truncation=True,
-                    max_length=512,
-                )
-                logger.info("NLP model loaded from HuggingFace hub")
-        except Exception as e:
-            logger.warning(f"Cannot load NLP model: {e} — using rule-based fallback")
-            _pipeline = "fallback"
-    return _pipeline
+    return "fallback"
 
 
 # ── Keyword banks ─────────────────────────────────────────────────────────────
@@ -104,8 +68,6 @@ def _detect_language(text: str) -> str:
 
 
 def analyze_text(text: str) -> NLPResult:
-    """Analisis teks email/SMS untuk deteksi phishing."""
-
     urgency_score, urgency_hits = _count_pattern_hits(text, URGENCY_PATTERNS)
     threat_score, threat_hits = _count_pattern_hits(text, THREAT_PATTERNS)
     reward_score, reward_hits = _count_pattern_hits(text, REWARD_PATTERNS)
@@ -119,7 +81,6 @@ def analyze_text(text: str) -> NLPResult:
     links = _extract_links(text)
     lang = _detect_language(text)
 
-    # Sentiment heuristic sederhana
     neg_count = len(urgency_hits) + len(threat_hits)
     pos_count = len(reward_hits)
     if neg_count > pos_count:
@@ -141,25 +102,19 @@ def analyze_text(text: str) -> NLPResult:
 
 
 def nlp_model_score(text: str) -> Tuple[float, float]:
-    """
-    Return (phishing_probability, confidence) menggunakan transformer model.
-    Fallback ke heuristic jika model tidak tersedia.
-    """
     pipeline = get_nlp_pipeline()
 
     if pipeline == "fallback" or pipeline is None:
-        # Heuristic fallback
         result = analyze_text(text)
         raw = (result.urgency_score * 0.4 +
                result.threat_score * 0.35 +
                result.reward_score * 0.25)
-        return raw, 0.6  # confidence rendah karena heuristic
+        return raw, 0.6
 
     try:
         out = pipeline(text[:512])[0]
         label = out["label"].upper()
         score = out["score"]
-        # Label dari model: PHISHING atau SAFE/LEGITIMATE
         prob = score if "PHISH" in label else (1 - score)
         return prob, score
     except Exception as e:
